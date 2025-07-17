@@ -1,0 +1,15 @@
+[build-system]
+requires = ["flit_core >=3.11,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "provider-variant-xpu"
+authors = [{name = "Chuanqi Wang", email = "chuanqi.wang@intel.com"}]
+dynamic = ["version", "description"]
+dependencies = []
+
+[project.urls]
+Home = "https://github.com/chuanqi129/provider-variant-xpu/"
+
+[project.entry-points.variant_plugins]
+provider_variant_xpu = "provider_variant_xpu.plugin:XpuVariantPlugin"
