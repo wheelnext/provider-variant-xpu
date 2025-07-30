@@ -4,7 +4,10 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "provider-variant-xpu"
-authors = [{name = "Chuanqi Wang", email = "chuanqi.wang@intel.com"}]
+authors = [
+    {name = "Chuanqi Wang", email = "chuanqi.wang@intel.com"},
+    {name = "Dmitry Rogozhkin", email = "dmitry.v.rogozhkin@intel.com"},
+]
 dynamic = ["version", "description"]
 dependencies = []
 
