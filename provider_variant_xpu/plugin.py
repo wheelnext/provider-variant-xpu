@@ -3,8 +3,11 @@ from __future__ import annotations
 import os
 import warnings
 from dataclasses import dataclass
+from functools import cache
 from typing import Protocol
 from typing import runtime_checkable
+
+from provider_variant_xpu.devices import devices as devmap
 
 VariantNamespace = str
 VariantFeatureName = str
@@ -41,8 +44,8 @@ class XpuVariantPlugin:
     namespace = "xpu"
     dynamic = False
 
-    @property
-    def detect_intel_gpu(self):
+    @cache
+    def generate_all_device_types(self) -> list[str] | None:
         pci_base_class_mask = 0x00ff0000
         pci_base_class_display = 0x00030000
         pci_vendor_id_intel = 0x8086
@@ -51,6 +54,7 @@ class XpuVariantPlugin:
         if not os.path.isdir(devices_path):
             return False  # Not a Linux system with PCI devices
 
+        devtypes = []
         for device in os.listdir(devices_path):
             dev_path = os.path.join(devices_path, device)
             try:
@@ -62,8 +66,15 @@ class XpuVariantPlugin:
 
                 # Check for display controller and Intel vendor
                 if (pci_class & pci_base_class_mask) == pci_base_class_display and pci_vendor == pci_vendor_id_intel:
-                    print(f"Detected Intel GPU at {dev_path} (vendor=0x{pci_vendor:04x})")
-                    return True
+                    with open(os.path.join(dev_path, "device")) as f:
+                        pci_device = f.read().strip()
+                    if pci_device not in devmap:
+                        warnings.warn("Intel GPU not in the devmap", UserWarning, stacklevel=1)
+                        continue
+                    for d in devmap[pci_device]:
+                        if d not in devtypes:
+                            devtypes.append(d)
+
             except Exception:
                 continue  # Ignore devices we can't parse
 
@@ -72,7 +83,7 @@ class XpuVariantPlugin:
             UserWarning,
             stacklevel=1,
         )
-        return False
+        return devtypes
 
     def get_supported_configs(
         self, known_properties: frozenset[VariantPropertyType] | None
@@ -80,32 +91,22 @@ class XpuVariantPlugin:
 
         keyconfigs: list[VariantFeatureConfig] = []
 
-        if self.detect_intel_gpu:
+        if devtypes := self.generate_all_device_types():
             keyconfigs.append(
                 VariantFeatureConfig(
-                    name="oneapi",
-                    values=["2025.1"],
+                    name="device_type",
+                    values=devtypes,
                     )
                 )
 
         return keyconfigs
 
-    def get_all_configs(
-        self, known_properties: frozenset[VariantPropertyType] | None
-    ) -> list[VariantFeatureConfig]:
-        return [
-            VariantFeatureConfig(
-                name="oneapi",
-                values=["2025.0", "2025.1", "2025.2"],
-            )
-        ]
-
     def validate_property(self, variant_property: VariantPropertyType) -> bool:
         assert isinstance(variant_property, VariantPropertyType)
         assert variant_property.namespace == self.namespace
 
-        if variant_property.feature == "oneapi":
-            return variant_property.value in ["2025.1"]
+        if variant_property.feature == "device_type":
+            return variant_property.value in sum(devmap.values(), [])
 
         warnings.warn(
             "Unknown variant feature received: "
@@ -114,12 +115,3 @@ class XpuVariantPlugin:
             stacklevel=1,
         )
         return False
-
-if __name__ == "__main__":
-    plugin = XpuVariantPlugin()
-    print(  # noqa: T201
-        plugin.validate_property(
-            VariantProperty(namespace="xpu", feature="oneapi", value="2025.1")
-        )
-    )
-
