@@ -12,7 +12,7 @@ dynamic = ["version", "description"]
 dependencies = []
 
 [project.urls]
-Home = "https://github.com/chuanqi129/provider-variant-xpu/"
+Home = "https://github.com/wheelnext/provider-variant-xpu/"
 
 [project.entry-points.variant_plugins]
 provider_variant_xpu = "provider_variant_xpu.plugin:XpuVariantPlugin"
