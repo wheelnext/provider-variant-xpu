@@ -1,3 +1,5 @@
+# Copyright (c) 2025 Intel Corporation
+
 from __future__ import annotations
 
 import os
@@ -11,6 +13,7 @@ from typing import Protocol
 from typing import runtime_checkable
 
 from provider_variant_xpu.devices import devices as devmap
+from provider_variant_xpu.ze import *
 
 VariantNamespace = str
 VariantFeatureName = str
@@ -49,84 +52,37 @@ class XpuVariantPlugin:
 
     @cache
     def generate_all_device_types(self) -> list[str] | None:
-        pci_base_class_mask = 0x00ff0000
-        pci_base_class_display = 0x00030000
         pci_vendor_id_intel = 0x8086
 
-        system = platform.system()
-        devtypes = []
-        if system == "Linux":
-            devices_path = "/sys/bus/pci/devices"
-            if not os.path.isdir(devices_path):
-                warnings.warn("Not a Linux system with PCI devices", UserWarning, stacklevel=1)
-                return []
-            for device in os.listdir(devices_path):
-                dev_path = os.path.join(devices_path, device)
-                try:
-                    # Read class and vendor files
-                    with open(os.path.join(dev_path, "class")) as f:
-                        pci_class = int(f.read().strip(), 16)
-                    with open(os.path.join(dev_path, "vendor")) as f:
-                        pci_vendor = int(f.read().strip(), 16)
+        if platform.system() not in ["Linux", "Windows"]:
+            warnings.warn(f"Unsupported OS: {system}", UserWarning, stacklevel=1)
+            return []
 
-                    # Check for display controller and Intel vendor
-                    if (pci_class & pci_base_class_mask) == pci_base_class_display and pci_vendor == pci_vendor_id_intel:
-                        with open(os.path.join(dev_path, "device")) as f:
-                            pci_device = f.read().strip()
-                        if pci_device not in devmap:
+        try:
+            desc = c_ze_init_driver_type_desc_t()
+            desc.stype = ZE_STRUCTURE_TYPE_INIT_DRIVER_TYPE_DESC
+            desc.flags = ZE_INIT_DRIVER_TYPE_FLAG_GPU
+            drivers = zeInitDrivers(desc)
+
+            devtypes = []
+            for driver in drivers:
+                devices = zeDeviceGet(driver)
+                for device in devices:
+                    props = zeDeviceGetProperties(device)
+                    if props.vendorId == pci_vendor_id_intel:
+                        device_id = props.deviceId
+                        if device_id not in devmap:
                             warnings.warn("Intel GPU not in the devmap", UserWarning, stacklevel=1)
                             continue
-                        for d in devmap[pci_device]:
+                        for d in devmap[device_id]:
                             if d not in devtypes:
                                 devtypes.append(d)
-
-                except Exception:
-                    continue  # Ignore devices we can't parse
-            warnings.warn(
-                "No Intel GPU detected",
-                UserWarning,
-                stacklevel=1,
-            )
-        elif system == "Windows":
-            try:
-                output = subprocess.run(
-                    [
-                        "powershell",
-                        "-Command",
-                        "Get-WmiObject Win32_VideoController | Select-Object -ExpandProperty PNPDeviceID"
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-                stdout = output.stdout
-                # Regex for both VEN_xxxx and DEV_xxxx in the same line
-                pattern = re.compile(r"VEN_([0-9A-Fa-f]{4}).*DEV_([0-9A-Fa-f]{4})")
-                for line in stdout.splitlines():
-                    match = pattern.search(line)
-                    if match:
-                        vendor = int(match.group(1), 16)
-                        device = match.group(2).lower()
-                        if vendor == pci_vendor_id_intel:
-                            device_id = f"0x{device}"
-                            if device_id not in devmap:
-                                warnings.warn("Intel GPU not in the devmap", UserWarning, stacklevel=1)
-                                continue
-                            for d in devmap[device_id]:
-                                if d not in devtypes:
-                                    devtypes.append(d)
-                if not devtypes:
-                    warnings.warn("No Intel GPU detected", UserWarning, stacklevel=1)
-                return devtypes
-            except subprocess.CalledProcessError as e:
-                warnings.warn(f"Failed to query Intel GPU with powershell: {e}", UserWarning, stacklevel=1)
-                return []
-            except Exception as e:
-                warnings.warn(f"Error during Intel GPU detection: {e}", UserWarning, stacklevel=1)
-                return []
-        else:
-            warnings.warn(f"Unsupported OS: {system}", UserWarning, stacklevel=1)
-        return devtypes
+            if not devtypes:
+                warnings.warn("No Intel GPU detected", UserWarning, stacklevel=1)
+            return devtypes
+        except Exception as e:
+            warnings.warn(f"Intel driver stack not installed or malfunctions: {e}", UserWarning, stacklevel=1)
+            return []
 
     def get_supported_configs(
         self, known_properties: frozenset[VariantPropertyType] | None

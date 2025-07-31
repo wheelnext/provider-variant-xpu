@@ -4,6 +4,8 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "provider-variant-xpu"
+readme = "README.md"
+license = { file = "LICENSE" }
 authors = [
     {name = "Chuanqi Wang", email = "chuanqi.wang@intel.com"},
     {name = "Dmitry Rogozhkin", email = "dmitry.v.rogozhkin@intel.com"},
