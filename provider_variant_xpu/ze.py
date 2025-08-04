@@ -101,8 +101,10 @@ ZE_INIT_DRIVER_TYPE_FLAG_GPU = 1 << 0
 ZE_INIT_DRIVER_TYPE_FLAG_NPU = 1 << 1
 ZE_INIT_DRIVER_TYPE_FLAG_FORCE_UINT32 = 0x7fffffff
 
-ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES = 0x3
-ZE_STRUCTURE_TYPE_INIT_DRIVER_TYPE_DESC = 0x00020021
+ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES = 0x3  # c_ze_device_properties_t
+ZE_STRUCTURE_TYPE_INIT_DRIVER_TYPE_DESC = 0x00020021  # c_ze_init_driver_type_desc_t
+ZE_STRUCTURE_TYPE_DEVICE_IP_VERSION_EXT = 0x1000f  # c_ze_device_ip_version_ext_t
+
 
 class c_ze_init_driver_type_desc_t(Structure):
     _fields_ = [
@@ -110,6 +112,8 @@ class c_ze_init_driver_type_desc_t(Structure):
         ("pNext", c_void_p),
         ("flags", c_uint32),
     ]
+    def __init__(self):
+        self.stype = ZE_STRUCTURE_TYPE_INIT_DRIVER_TYPE_DESC
 
 class c_ze_device_properties_t(Structure):
     _fields_ = [
@@ -135,7 +139,17 @@ class c_ze_device_properties_t(Structure):
         ("uuid", c_uint8 * ZE_MAX_DEVICE_UUID_SIZE), # ze_device_uuid_t
         ("name", c_char * ZE_MAX_DEVICE_NAME),
     ]
+    def __init__(self):
+        self.stype = ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES
 
+class c_ze_device_ip_version_ext_t(Structure):
+    _fields_ = [
+        ("stype", c_uint32),
+        ("pNext", c_void_p),
+        ("ipVersion", c_uint32),
+    ]
+    def __init__(self):
+        self.stype = ZE_STRUCTURE_TYPE_DEVICE_IP_VERSION_EXT
 
 def zeInitDrivers(desc: c_ze_init_driver_type_desc_t):
     _LoadZe()
@@ -197,11 +211,15 @@ def zeDeviceGet(driver):
     return values
 
 
-def zeDeviceGetProperties(device):
+def zeDeviceGetProperties(device, extprops):
     fn = _zeGetFunctionPointer("zeDeviceGetProperties")
 
     props = c_ze_device_properties_t()
     props.stype = ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES
+
+    prev = props
+    for p in extprops:
+        prev.pNext = cast(pointer(p), c_void_p)
 
     ret = fn(device, byref(props))
     _zeCheck(ret)
