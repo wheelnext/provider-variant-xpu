@@ -12,7 +12,7 @@ from functools import cache
 from typing import Protocol
 from typing import runtime_checkable
 
-from provider_variant_xpu.devices import devices as devmap
+from provider_variant_xpu.devices import *
 from provider_variant_xpu.ze import *
 
 VariantNamespace = str
@@ -51,7 +51,7 @@ class XpuVariantPlugin:
     dynamic = False
 
     @cache
-    def generate_all_device_types(self) -> list[str] | None:
+    def generate_all_device_ips(self) -> list[str] | None:
         pci_vendor_id_intel = 0x8086
 
         if platform.system() not in ["Linux", "Windows"]:
@@ -60,26 +60,31 @@ class XpuVariantPlugin:
 
         try:
             desc = c_ze_init_driver_type_desc_t()
-            desc.stype = ZE_STRUCTURE_TYPE_INIT_DRIVER_TYPE_DESC
             desc.flags = ZE_INIT_DRIVER_TYPE_FLAG_GPU
             drivers = zeInitDrivers(desc)
 
-            devtypes = []
+            devips = []
             for driver in drivers:
                 devices = zeDeviceGet(driver)
                 for device in devices:
-                    props = zeDeviceGetProperties(device)
+                    devip = c_ze_device_ip_version_ext_t()
+                    props = zeDeviceGetProperties(device, [devip])
                     if props.vendorId == pci_vendor_id_intel:
-                        device_id = props.deviceId
-                        if device_id not in devmap:
-                            warnings.warn("Intel GPU not in the devmap", UserWarning, stacklevel=1)
-                            continue
-                        for d in devmap[device_id]:
-                            if d not in devtypes:
-                                devtypes.append(d)
-            if not devtypes:
+                        devip = IntelDeviceIp(devip.ipVersion)
+                        for ip in devip.get_all_compat_ips():
+                            # Filter out devices which IPs are not explicitly
+                            # known to plugin. This gives consistency with the
+                            # check in validate_property().
+                            if ip not in get_all_ips():
+                                warnings.warn(f"Intel device with {ip} device IP is filtered out as not known to plugin)")
+                                continue
+                            # We must return list of unique IPs as a requirement
+                            # of variantlib.
+                            if ip not in devips:
+                                devips.append(ip)
+            if not devips:
                 warnings.warn("No Intel GPU detected", UserWarning, stacklevel=1)
-            return devtypes
+            return devips
         except Exception as e:
             warnings.warn(f"Intel driver stack not installed or malfunctions: {e}", UserWarning, stacklevel=1)
             return []
@@ -90,11 +95,11 @@ class XpuVariantPlugin:
 
         keyconfigs: list[VariantFeatureConfig] = []
 
-        if devtypes := self.generate_all_device_types():
+        if devips := self.generate_all_device_ips():
             keyconfigs.append(
                 VariantFeatureConfig(
-                    name="device_type",
-                    values=devtypes,
+                    name="device_ip",
+                    values=devips,
                     )
                 )
 
@@ -104,13 +109,17 @@ class XpuVariantPlugin:
         assert isinstance(variant_property, VariantPropertyType)
         assert variant_property.namespace == self.namespace
 
-        if variant_property.feature == "device_type":
-            return variant_property.value in sum(devmap.values(), [])
+        if variant_property.feature == "device_ip":
+            return variant_property.value in get_all_ips()
 
         warnings.warn(
             "Unknown variant feature received: "
-            f"`{namespace} :: {variant_property.feature}`.",
+            f"`{self.namespace} :: {variant_property.feature}`.",
             UserWarning,
             stacklevel=1,
         )
         return False
+
+if __name__ == "__main__":
+    plugin = XpuVariantPlugin()
+    print(plugin.get_supported_configs(None))

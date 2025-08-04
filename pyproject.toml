@@ -13,6 +13,12 @@ authors = [
 dynamic = ["version", "description"]
 dependencies = []
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-mock",
+]
+
 [project.urls]
 Home = "https://github.com/wheelnext/provider-variant-xpu/"
 
