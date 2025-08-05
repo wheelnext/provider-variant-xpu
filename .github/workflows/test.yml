@@ -1,0 +1,49 @@
+name: test
+
+on: [push, pull_request]
+
+permissions: read-all
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v4
+    - name: 'Set up Python ${{ matrix.python-version }}'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: 'Install variantlib'
+      run: |
+        # aligning version if variantlib with the one used in this project:
+        # * https://github.com/wheelnext/pep_xxx_wheel_variants
+        python3 -m pip install git+https://github.com/wheelnext/variantlib@008ba22
+    - name: 'Install project'
+      run: |
+        python3 --version
+        python3 -m pip install -e .
+        python3 -m pip install -e ".[test]"
+    - name: 'Run pytest'
+      run: |
+        python3 -m pytest tests/
+    - name: 'Test variantlib plugins list'
+      run: |
+        variantlib plugins list >_list.txt
+        grep xpu _list.txt
+    - name: 'Test variantlib plugins get-supported-configs'
+      run: |
+        variantlib plugins get-supported-configs >_configs.txt
+        # File should be empty as runner does not have intel gpu
+        test ! -s _configs.txt
+    - name: 'Test variantlib plugins validate-property'
+      run: |
+        variantlib plugins validate-property "xpu::device_ip::12.55.8" >_props.txt
+        grep " valid" _props.txt
+        variantlib plugins validate-property "xpu::device_ip::0.0.0" >_props.txt
+        grep invalid _props.txt
+        variantlib plugins validate-property "xpu::nosuchprop::12.55.8" >_props.txt
+        grep invalid _props.txt
