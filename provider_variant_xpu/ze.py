@@ -14,7 +14,6 @@
 import os
 import platform
 import threading
-
 from ctypes import *
 
 _g_debug = (os.getenv("XPU_DEBUG_ZE", "0").lower() in ["true", "1"])

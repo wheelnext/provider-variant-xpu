@@ -1,16 +1,15 @@
 # Copyright (c) 2025 Intel Corporation
 
 import pytest
-
 from variantlib.models.variant import VariantProperty
 
 # Importing the whole module to be able to access modifications
 # to internal module variables (such as _g_zelib).
 import provider_variant_xpu.ze as ze
-
 from provider_variant_xpu.devices import _intel_devips
 from provider_variant_xpu.plugin import XpuVariantPlugin
 from provider_variant_xpu.ze import *
+
 
 @pytest.fixture
 def plugin() -> XpuVariantPlugin:

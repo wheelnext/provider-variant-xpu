@@ -6,8 +6,7 @@ import platform
 import warnings
 from dataclasses import dataclass
 from functools import cache
-from typing import Protocol
-from typing import runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from provider_variant_xpu.devices import *
 from provider_variant_xpu.ze import *
