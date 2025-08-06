@@ -17,6 +17,7 @@ dependencies = []
 test = [
     "pytest",
     "pytest-mock",
+    "ruff",
     "variantlib",
 ]
 
@@ -25,3 +26,7 @@ Home = "https://github.com/wheelnext/provider-variant-xpu/"
 
 [project.entry-points.variant_plugins]
 provider_variant_xpu = "provider_variant_xpu.plugin:XpuVariantPlugin"
+
+[tool.ruff.lint]
+    select = ["E"]
+    ignore = ["E501"]
