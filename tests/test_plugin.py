@@ -2,7 +2,6 @@
 
 import pytest
 
-from variantlib.models.provider import VariantFeatureConfig
 from variantlib.models.variant import VariantProperty
 
 # Importing the whole module to be able to access modifications

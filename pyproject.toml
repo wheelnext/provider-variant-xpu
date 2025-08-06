@@ -28,5 +28,5 @@ Home = "https://github.com/wheelnext/provider-variant-xpu/"
 provider_variant_xpu = "provider_variant_xpu.plugin:XpuVariantPlugin"
 
 [tool.ruff.lint]
-    select = ["E"]
-    ignore = ["E501"]
+    select = ["E", "F"]
+    ignore = ["E501", "F403", "F405"]

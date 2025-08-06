@@ -32,17 +32,17 @@ def test_to_uint32_devip():
     with pytest.raises(AssertionError):
         to_uint32_devip(f"0.0.{bad_revision}")
     with pytest.raises(AssertionError):
-        to_uint32_devip(f"0.256.0")
+        to_uint32_devip("0.256.0")
     with pytest.raises(AssertionError):
-        to_uint32_devip(f"256.0.0")
+        to_uint32_devip("256.0.0")
     with pytest.raises(AssertionError):
-        to_uint32_devip(f"1.2.3.4")
+        to_uint32_devip("1.2.3.4")
 
 def test_intel_devips():
     """Test internal device IP table"""
     for key, value in _intel_devips.items():
         assert pattern.fullmatch(key)
-        ignore_result = to_uint32_devip(key)
+        _ = to_uint32_devip(key)
         assert value
         assert "devices" in value
         for d in value["devices"]:

@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import os
 import platform
-import subprocess
-import re
 import warnings
 from dataclasses import dataclass
 from functools import cache
