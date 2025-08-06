@@ -1,7 +1,8 @@
 # Copyright (c) 2025 Intel Corporation
 
-import pytest
 import re
+
+import pytest
 
 from provider_variant_xpu.devices import *
 from provider_variant_xpu.devices import _intel_devips
