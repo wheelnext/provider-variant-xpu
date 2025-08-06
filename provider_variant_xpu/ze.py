@@ -40,7 +40,7 @@ def _LoadZe():
                     g_zelib = CDLL(os.path.join(
                         os.getenv("WINDIR", "C:/Windows"),
                         "System32/ze_loader.dll"))
-            except OSError as e:
+            except OSError:
                 pass
             if g_zelib is None:
                 raise FileNotFoundError("Failed to open L0 library")
@@ -157,7 +157,7 @@ def zeInitDrivers(desc: c_ze_init_driver_type_desc_t):
     version_less_than_1_10 = False
     try:
         fn = _zeGetFunctionPointer("zeInitDrivers")
-    except Exception as e:
+    except Exception:
         fn = _zeGetFunctionPointer("zeInit")
         _zePrint("L0 library API is less than 1.10, going to use zeInit()")
         version_less_than_1_10 = True
