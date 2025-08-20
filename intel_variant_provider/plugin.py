@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from functools import cache
 from typing import Protocol, runtime_checkable
 
-from provider_variant_xpu.devices import *
-from provider_variant_xpu.ze import *
+from intel_variant_provider.devices import *
+from intel_variant_provider.ze import *
 
 VariantNamespace = str
 VariantFeatureName = str
@@ -42,8 +42,8 @@ class VariantFeatureConfig:
     values: list[str]
 
 
-class XpuVariantPlugin:
-    namespace = "xpu"
+class IntelVariantPlugin:
+    namespace = "intel"
     dynamic = False
 
     @cache
@@ -117,5 +117,5 @@ class XpuVariantPlugin:
         return False
 
 if __name__ == "__main__":
-    plugin = XpuVariantPlugin()
+    plugin = IntelVariantPlugin()
     print(plugin.get_supported_configs(None))

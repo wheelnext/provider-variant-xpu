@@ -1,4 +1,4 @@
-# XPU Variant Provider Plugin
+# Intel Variant Provider Plugin
 
 A variant provider plugin for the Wheel Variant upcoming proposed standard
 that enables automatic detection and selection of Intel GPU-optimized
@@ -10,7 +10,7 @@ Python packages.
 
    * Determines the compute capability available on the system.
    * Resolves with compute capability compatibility in mind.
-   * Returns feature list in the form of `xpu::device_ip::<ip>`
+   * Returns feature list in the form of `intel::device_ip::<ip>`
    * Each value (`<ip>`) in the list represents human readable form of
      Intel hardware device IP (GMDID) quariable via Level Zero [ZE_extension_device_ip_version]
 
@@ -20,12 +20,12 @@ Add variant configuration to your `pyproject.toml`:
 
 ```
 [variant.default-priorities]
-namespace = ["xpu"]
+namespace = ["intel"]
 
-[variant.providers.xpu]
-requires = ["provider_variant_xpu"]
+[variant.providers.intel]
+requires = ["intel_variant_provider"]
 enable-if = "platform_system == 'Linux'"
-plugin-api = "provider_variant_xpu.plugin:XpuVariantPlugin"
+plugin-api = "intel_variant_provider.plugin:IntelVariantPlugin"
 ```
 
 ## Understanding Intel Device IP Values
@@ -59,18 +59,18 @@ Matched ids:
 
 For Python package to target specific Intel architectures using XPU variant
 provider plugin, it's required to build package variants for these
-architectures and set `xpu::device_ip::<ip>` properties accordingly. For the
+architectures and set `intel::device_ip::<ip>` properties accordingly. For the
 above example of `bmg` and `xe3` that would be:
 
 ```
 # for bmg variant:
-xpu::device_ip::20.1.0
+intel::device_ip::20.1.0
 
 # for xe3 variant:
-xpudevice_ip::30.0.0
-xpudevice_ip::30.0.4
-xpudevice_ip::30.1.0
-xpudevice_ip::30.1.1
+intel::device_ip::30.0.0
+intel::device_ip::30.0.4
+intel::device_ip::30.1.0
+intel::device_ip::30.1.1
 ```
 
 [ZE_extension_device_ip_version]: https://oneapi-src.github.io/level-zero-spec/level-zero/latest/core/EXT_DeviceIpVersion.html#ze-extension-device-ip-version
