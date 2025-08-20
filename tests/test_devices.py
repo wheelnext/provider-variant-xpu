@@ -4,8 +4,8 @@ import re
 
 import pytest
 
-from provider_variant_xpu.devices import *
-from provider_variant_xpu.devices import _intel_devips
+from intel_variant_provider.devices import *
+from intel_variant_provider.devices import _intel_devips
 
 pattern = re.compile("^[a-z0-9_.]+$")
 

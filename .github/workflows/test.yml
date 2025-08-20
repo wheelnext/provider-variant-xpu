@@ -33,7 +33,7 @@ jobs:
     - name: 'Test variantlib plugins list'
       run: |
         variantlib plugins list >_list.txt
-        grep xpu _list.txt
+        grep intel _list.txt
     - name: 'Test variantlib plugins get-supported-configs'
       run: |
         variantlib plugins get-supported-configs >_configs.txt
@@ -41,9 +41,9 @@ jobs:
         test ! -s _configs.txt
     - name: 'Test variantlib plugins validate-property'
       run: |
-        variantlib plugins validate-property "xpu::device_ip::12.55.8" >_props.txt
+        variantlib plugins validate-property "intel::device_ip::12.55.8" >_props.txt
         grep " valid" _props.txt
-        variantlib plugins validate-property "xpu::device_ip::0.0.0" >_props.txt
+        variantlib plugins validate-property "intel::device_ip::0.0.0" >_props.txt
         grep invalid _props.txt
-        variantlib plugins validate-property "xpu::nosuchprop::12.55.8" >_props.txt
+        variantlib plugins validate-property "intel::nosuchprop::12.55.8" >_props.txt
         grep invalid _props.txt
