@@ -1,0 +1,58 @@
+name: release
+
+on: [push, pull_request]
+
+permissions: read-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v4
+    - name: 'Set up Python ${{ matrix.python-version }}'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: 'Install build dependencies'
+      run: |
+        python3 --version
+        python3 -m pip install build
+    - name: 'Paranoid cleanup'
+      run: |
+        rm -rf dist/
+    - name: 'Build a wheel package'
+      run: |
+        python3 -m build -w
+    - name: 'Build a source distribution package'
+      if: ${{ matrix.python-version == '3.13' }}
+      run: |
+        python3 -m build -s
+    - name: 'Upload artifacts'
+      uses: actions/upload-artifact@v4
+      with:
+        name: intel-variant-provider-${{ matrix.python-version }}
+        path: dist/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Download Artifacts'
+      uses: actions/download-artifact@v5
+      with:
+        path: downloaded_artifacts
+    - name: 'List donwloaded artifacts'
+      run: |
+        ls -al downloaded_artifacts/
+    #- name: 'Create GitHub Release'
+    #  uses: softprops/action-gh-release@v2
+    #  if: startsWith(github.ref, 'refs/tags/v')
+    #  with:
+    #    files: downloaded_artifacts/**/*
+    #    prerelease: ${{ contains(github.ref, '-rc') }}
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
