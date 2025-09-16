@@ -1,7 +1,6 @@
 # Copyright (c) 2025 Intel Corporation
 
 import pytest
-from variantlib.models.variant import VariantProperty
 
 # Importing the whole module to be able to access modifications
 # to internal module variables (such as _g_zelib).
@@ -15,24 +14,11 @@ from intel_variant_provider.ze import *
 def plugin() -> IntelVariantPlugin:
     return IntelVariantPlugin()
 
-def test_validate_property(plugin):
-    for key in _intel_devips.keys():
-        prop = f"intel :: device_ip :: {key}"
-        assert plugin.validate_property(VariantProperty.from_str(prop))
-
-def test_validate_property_assert(plugin):
-    with pytest.raises(AssertionError):
-        plugin.validate_property(VariantProperty.from_str(
-            "notintel :: device_ip :: 12.55.8"))
-
-def test_validate_property_fail_warn(plugin):
-    with pytest.warns(UserWarning):
-        assert not plugin.validate_property(VariantProperty.from_str(
-            "intel :: nosuchprop :: 12.55.8"))
-
-def test_validate_property_fail(plugin):
-    assert not plugin.validate_property(VariantProperty.from_str(
-        "intel :: device_ip :: 0.0.0"))
+def test_get_all_configs(plugin):
+    configs = plugin.get_all_configs()
+    assert len(configs) == 1
+    assert configs[0].name == "device_ip"
+    assert configs[0].values == list(_intel_devips.keys())
 
 
 class TestGetSupportedConfigs:
@@ -53,4 +39,4 @@ class TestGetSupportedConfigs:
     def test_no_L0_library(self, plugin, mocker):
         mocker.patch(self.cdll_name, side_effect=OSError("No such file"))
         with pytest.warns(UserWarning):
-            assert not plugin.get_supported_configs(None)
+            assert not plugin.get_supported_configs()

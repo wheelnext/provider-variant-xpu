@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
     - name: 'Checkout'
       uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
       run: |
         # aligning version if variantlib with the one used in this project:
         # * https://github.com/wheelnext/pep_xxx_wheel_variants
-        python3 -m pip install git+https://github.com/wheelnext/variantlib@008ba22
+        python3 -m pip install git+https://github.com/wheelnext/variantlib@0dd7795
     - name: 'Install project'
       run: |
         python3 --version
@@ -34,16 +34,14 @@ jobs:
       run: |
         variantlib plugins list >_list.txt
         grep intel _list.txt
-    - name: 'Test variantlib plugins get-supported-configs'
+    - name: 'Test for supported configs on the system'
       run: |
-        variantlib plugins get-supported-configs >_configs.txt
+        variantlib plugins get-configs -s >_configs_supported.txt
         # File should be empty as runner does not have intel gpu
-        test ! -s _configs.txt
-    - name: 'Test variantlib plugins validate-property'
+        test ! -s _configs_supported.txt
+    - name: 'Test for all configs'
       run: |
-        variantlib plugins validate-property "intel::device_ip::12.55.8" >_props.txt
-        grep " valid" _props.txt
-        variantlib plugins validate-property "intel::device_ip::0.0.0" >_props.txt
-        grep invalid _props.txt
-        variantlib plugins validate-property "intel::nosuchprop::12.55.8" >_props.txt
-        grep invalid _props.txt
+        variantlib plugins get-configs -a >_configs_all.txt
+        test -s _configs_all.txt
+        grep "intel :: device_ip ::" _configs_all.txt
+        ! grep -v "intel :: device_ip ::" _configs_all.txt
